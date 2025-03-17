@@ -1,0 +1,12 @@
+services:
+  lambda:
+    build: .
+    platform: linux/amd64
+    ports:
+      - 9000:8080
+    develop:
+      watch:
+        - path: pyproject.toml
+          action: rebuild
+        - path: lambda_function.py
+          action: rebuild

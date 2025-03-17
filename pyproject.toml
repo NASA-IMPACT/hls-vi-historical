@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.version]
+source = "vcs"
+
+[project]
+name = "hls-vi-historical"
+dynamic = ["version"]
+description = "Generate HLS Vegetation Indices for Historical HLS Data"
+readme = "README.md"
+authors = [
+    { name = "Chuck Daniels", email = "chuck@developmentseed.org" },
+    { name = "Chris Holden", email = "chris@developmentseed.org" },
+    { name = "Sean Harkins", email = "sean@developmentseed.org" },
+]
+requires-python = ">=3.12"
+dependencies = [
+    "aws-lambda-powertools>=3.8.0",
+    "hls-vi@git+https://github.com/NASA-IMPACT/hls-vi@v1.19",
+]
+
+[dependency-groups]
+dev = []
+
+# [tool.uv.sources]
+# hls-vi = { git = "https://github.com/NASA-IMPACT/hls-vi", rev = "constrain-dataclasses" }
