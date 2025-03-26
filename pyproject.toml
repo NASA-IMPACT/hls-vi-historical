@@ -20,12 +20,8 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "aws-lambda-powertools>=3.8.0",
     "hls-vi@git+https://github.com/NASA-IMPACT/hls-vi@v1.19",
 ]
 
 [dependency-groups]
 dev = []
-
-# [tool.uv.sources]
-# hls-vi = { git = "https://github.com/NASA-IMPACT/hls-vi", rev = "constrain-dataclasses" }

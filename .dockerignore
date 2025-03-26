@@ -1,4 +1,3 @@
 *
-!lambda_function.py
+!generate-vi-files.sh
 !pyproject.toml
-!uv.lock
