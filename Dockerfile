@@ -2,6 +2,7 @@ FROM python:3.12-slim AS builder
 
 SHELL [ "/bin/bash", "-o", "pipefail", "-c" ]
 
+# hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get install --no-install-recommends -y git wget \
     && apt-get clean && rm -rf /var/lib/apt/lists/* \
@@ -13,7 +14,8 @@ RUN uv pip install --target /tmp/site-packages --requirements pyproject.toml
 
 FROM python:3.12-slim
 
-# Install expat to get libexpat.so.1, which is required by rasterio (indirectly?)
+# Install expat to get libexpat.so.1, which is required by rasterio.
+# hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get install --no-install-recommends -y expat \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
