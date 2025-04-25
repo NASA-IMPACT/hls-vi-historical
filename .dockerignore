@@ -1,3 +1,3 @@
 *
-!generate-vi-files.sh
+!hls_vi_historical/
 !pyproject.toml

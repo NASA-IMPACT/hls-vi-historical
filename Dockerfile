@@ -23,7 +23,7 @@ RUN apt-get update \
 ARG WORKDIR=/work
 WORKDIR ${WORKDIR}
 COPY --from=builder /tmp/site-packages ./
-COPY generate-vi-files.sh /usr/local/bin
+COPY hls_vi_historical/ ./hls_vi_historical/
 
 # Set PYTHONPATH to WORKDIR because that's where we just copied all of the site
 # packages from the builder image.  This allows the console scripts to find the
@@ -31,9 +31,4 @@ COPY generate-vi-files.sh /usr/local/bin
 # site packages live.
 ENV PYTHONPATH=${WORKDIR}
 
-# Move all console scripts to userland directory on PATH, so we can invoke the
-# VI CLI scripts from our script below.  These originate from the builder images
-# /tmp/site-packages/bin directory.
-RUN mv --no-clobber ./bin/* /usr/local/bin
-
-ENTRYPOINT [ "generate-vi-files.sh" ]
+CMD [ "python", "hls_vi_historical/main.py" ]
