@@ -17,6 +17,10 @@ env:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # We currently do not have any environment-specific settings, but our OIDC
+    # trust relationship is configured by environment (for "dev" and "prod"),
+    # not by ref/branch, so we need to set the environment name.
+    environment: ${{ github.action == 'release' && 'prod' || 'dev' }}
 
     steps:
       - name: Checkout sources
