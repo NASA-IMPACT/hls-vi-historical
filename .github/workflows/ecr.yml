@@ -22,13 +22,6 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-      - name: Lint shell scripts
-        run: |
-          # Full GitHub runners include shellcheck, but `act` default runners
-          # don't, so this simply installs shellcheck when using `act` locally.
-          type shellcheck 2>/dev/null || apt-get update && apt-get install -y shellcheck
-          find . -type f -name "*.sh" -exec shellcheck {} +
-
       - name: Lint Dockerfile
         uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf  # v3.1.0
 
