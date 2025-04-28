@@ -37,7 +37,6 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_ARN }}
           role-session-name: ${{ github.actor }}
           aws-region: ${{ vars.AWS_DEFAULT_REGION || 'us-west-2' }}
-          audience: https://github.com
 
       - name: Configure AWS credentials
         # When running locally via `act`, use your own short-term credentials
