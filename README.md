@@ -2,7 +2,31 @@
 
 Docker image for generating a suite of Vegetation Indices (VI) for historical
 HLS Products, which were ingested _prior_ to the deployment of HLS-VI forward
-processing into production.
+processing into production.  However, there is nothing preventing its use for
+_re_-creating VI granules that have already been produced during forward
+processing.
+
+- [Deployment](#deployment)
+- [Development](#development)
+  - [Bootstrapping MinIO](#bootstrapping-minio)
+  - [Testing the Docker Image](#testing-the-docker-image)
+  - [Inspecting MinIO Objects](#inspecting-minio-objects)
+  - [Locally Testing the GitHub Workflow](#locally-testing-the-github-workflow)
+
+## Deployment
+
+When deploying a container from an image published from this repository, the
+following environment variables must/can be set:
+
+- `AWS_BATCH_JOB_ID`: It is assumed that the container will be used in an AWS
+  batch job, so this should be set to the job ID.
+- `GRANULE_ID`: ID of the HLS granule from which to produce the associated HLS
+  VI granule files.
+- `OUTPUT_BUCKET`: Name of the bucket in which to put the produced HLS VI
+  granule files.
+- `DEBUG_BUCKET` (_optional_): Name of the bucket to use _instead of_
+  `OUTPUT_BUCKET`, so that the produced outputs can be inspected for debugging
+  purposes, without triggering LPDAAC notification.
 
 ## Development
 
