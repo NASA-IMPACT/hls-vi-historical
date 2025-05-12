@@ -303,9 +303,8 @@ def upload_outputs(
     key_prefix = output_key_prefix(granule_id)
     acl: ObjectCannedACLType = "public-read" if debug else "private"
 
-    for filename in os.listdir(output_dir):
-        src = output_dir / filename
-        key = f"{key_prefix}/{filename}"
+    for src in output_dir.iterdir():
+        key = f"{key_prefix}/{src.name}"
 
         with open(src, "rb") as body:
             print(f"Uploading {src} to s3://{bucket}/{key}")
