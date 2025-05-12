@@ -6,16 +6,16 @@ processing into production.  However, there is nothing preventing its use for
 _re_-creating VI granules that have already been produced during forward
 processing.
 
-- [Deployment](#deployment)
+- [Running a Container](#running-a-container)
 - [Development](#development)
   - [Bootstrapping MinIO](#bootstrapping-minio)
   - [Testing the Docker Image](#testing-the-docker-image)
   - [Inspecting MinIO Objects](#inspecting-minio-objects)
   - [Locally Testing the GitHub Workflow](#locally-testing-the-github-workflow)
 
-## Deployment
+## Running a Container
 
-When deploying a container from an image published from this repository, the
+When running a container from an image published from this repository, the
 following environment variables must/can be set:
 
 - `AWS_BATCH_JOB_ID`: It is assumed that the container will be used in an AWS
