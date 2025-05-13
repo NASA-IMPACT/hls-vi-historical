@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.version]
+source = "vcs"
+
+[project]
+name = "hls-vi-historical"
+dynamic = ["version"]
+description = "Generate HLS Vegetation Indices for Historical HLS Data"
+readme = "README.md"
+authors = [
+    { name = "Chuck Daniels", email = "chuck@developmentseed.org" },
+    { name = "Chris Holden", email = "chris@developmentseed.org" },
+    { name = "Sean Harkins", email = "sean@developmentseed.org" },
+]
+requires-python = "~=3.12.0"
+dependencies = [
+    "boto3>=1.37.35",
+    "hls-manifest@git+https://github.com/NASA-IMPACT/hls-manifest@v2.1",
+    "hls-vi@git+https://github.com/NASA-IMPACT/hls-vi@v1.19",
+    # WARNING: hls-manifest depends upon pkg_resources, which was REMOVED from
+    # Python 3.12, so we must explicitly include setuptools to get it.
+    "setuptools>=78.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.15.0",
+    "pre-commit>=4.2.0",
+    "pytest>=8.3.5",
+    "requests>=2.32.3",
+    "ruff>=0.11.5",
+    "types-boto3[s3]>=1.37.37",
+    "types-requests>=2.32.0.20250328",
+]
+
+[tool.mypy]
+files = "hls_vi_historical"
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["lxml.*", "hls_manifest.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = ["--doctest-modules"]
+doctest_optionflags = ["NORMALIZE_WHITESPACE", "ELLIPSIS"]
+
+[tool.uv]
+package = true

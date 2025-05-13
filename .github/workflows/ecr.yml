@@ -1,0 +1,81 @@
+name: Build, Tag, and Push Image to ECR
+
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+permissions:
+  id-token: write # required for requesting the JWT (for OIDC)
+  contents: read  # required for actions/checkout
+
+env:
+  SOURCE_IMAGE: hls-vi-historical
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # We currently do not have any environment-specific settings, but our OIDC
+    # trust relationship is configured by environment (for "dev" and "prod"),
+    # not by ref/branch, so we need to set the environment name.
+    environment: ${{ github.action == 'release' && 'prod' || 'dev' }}
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf  # v3.1.0
+
+      - name: Build image
+        run: |
+          docker build --tag ${SOURCE_IMAGE}:latest .
+
+      - name: Configure AWS credentials (OIDC)
+        # In CI (i.e., not running locally via `act`), use OIDC for credentials
+        if: ${{ !env.ACT }}
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722  # v4.1.0
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_ARN }}
+          role-session-name: ${{ github.actor }}
+          aws-region: ${{ vars.AWS_DEFAULT_REGION || 'us-west-2' }}
+
+      - name: Configure AWS credentials
+        # When running locally via `act`, use your own short-term credentials
+        if: ${{ env.ACT }}
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722  # v4.1.0
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ vars.AWS_DEFAULT_REGION || 'us-west-2' }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076  # v2.0.1
+
+      - name: Determine image tag
+        id: set-image-tag
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        with:
+          github-token: ${{ github.token || 'none' }}
+          result-encoding: string
+          script: |
+            if (context.eventName == 'release') {
+              // Upon release, the ref should be of the form refs/tags/TAG,
+              // where TAG is the release tag.  The following obtains the TAG.
+              return context.ref.split('/').slice(-1)[0];
+            }
+
+            // Return either the pull request number or the git commit short SHA
+            return context.payload.number ?? context.sha.slice(0, 7);
+
+      - name: Tag and push image to Amazon ECR
+        env:
+          TARGET_IMAGE: ${{ steps.login-ecr.outputs.registry }}/${{ env.SOURCE_IMAGE }}
+          TAG: ${{ steps.set-image-tag.outputs.result }}
+        run: |
+          docker tag ${SOURCE_IMAGE}:latest ${TARGET_IMAGE}:${TAG}
+          docker push ${TARGET_IMAGE}:${TAG}
