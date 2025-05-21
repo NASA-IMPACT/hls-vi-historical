@@ -24,9 +24,9 @@ following environment variables must/can be set:
 - `GRANULE_ID`: ID of the HLS granule from which to produce the associated HLS
   VI granule files.
 - `LPDAAC_PROTECTED_BUCKET_NAME` (_optional_): Name of the bucket containing
-  ingested HLS granule files (default: `"lp_prod_protected"`).
+  ingested HLS granule files (default: `"lp-prod-protected"`).
 - `LPDAAC_PUBLIC_BUCKET_NAME` (_optional_): Name of the bucket containing
-  HLS thumbnails (`.jpg`) (default: `"lp_prod_public"`) associated with the
+  HLS thumbnails (`.jpg`) (default: `"lp-prod-public"`) associated with the
   granule files in the other bucket.
 - `OUTPUT_BUCKET`: Name of the bucket in which to put the produced HLS VI
   granule files.
