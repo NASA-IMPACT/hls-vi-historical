@@ -8,6 +8,7 @@ processing.
 
 - [Running a Container](#running-a-container)
 - [Development](#development)
+  - [Running Unit Tests](#running-unit-tests)
   - [Bootstrapping MinIO](#bootstrapping-minio)
   - [Testing the Docker Image](#testing-the-docker-image)
   - [Inspecting MinIO Objects](#inspecting-minio-objects)
@@ -22,6 +23,11 @@ following environment variables must/can be set:
   batch job, so this should be set to the job ID.
 - `GRANULE_ID`: ID of the HLS granule from which to produce the associated HLS
   VI granule files.
+- `LPDAAC_PROTECTED_BUCKET_NAME` (_optional_): Name of the bucket containing
+  ingested HLS granule files (default: `"lp-prod-protected"`).
+- `LPDAAC_PUBLIC_BUCKET_NAME` (_optional_): Name of the bucket containing
+  HLS thumbnails (`.jpg`) (default: `"lp-prod-public"`) associated with the
+  granule files in the other bucket.
 - `OUTPUT_BUCKET`: Name of the bucket in which to put the produced HLS VI
   granule files.
 - `DEBUG_BUCKET` (_optional_): Name of the bucket to use _instead of_
@@ -39,6 +45,14 @@ Prerequisites:
 - Install [Docker Desktop]
 - Install [AWS CLI] (optional, for inspecting S3 objects in your MinIO store)
 - Install [act] (optional, for locally testing Docker image publication GitHub workflow)
+
+### Running Unit Tests
+
+Run unit tests as follows:
+
+```plain
+uv run pytest
+```
 
 ### Bootstrapping MinIO
 

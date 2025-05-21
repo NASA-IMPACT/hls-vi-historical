@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
 import boto3
+import botocore.exceptions
 
 if TYPE_CHECKING:
     from types_boto3_s3 import S3Client
@@ -23,7 +24,12 @@ from hls_vi.generate_stac_items import create_item
 type Downloader = Callable[[tuple[str, str], Path], None]
 
 
-def granule_sources(granule_id: str) -> tuple[tuple[str, str], ...]:
+def granule_sources(
+    granule_id: str,
+    *,
+    public_bucket: str,
+    protected_bucket: str,
+) -> tuple[tuple[str, str], ...]:
     """Return LPDAAC bucket-key 2-tuples of HLS files for a granule that are
     necessary to create corresponding HLS VI files.
 
@@ -37,6 +43,11 @@ def granule_sources(granule_id: str) -> tuple[tuple[str, str], ...]:
     granule_id:
         ID of the granule to generate bucket-key pairs for of HLS files required
         to create corresponding HLS VI files.
+    public_bucket:
+        Name of the "public" bucket, where thumbnails are stored.
+    protected_bucket:
+        Name of the "protected" bucket, where all other granule files are stored,
+        requiring read permissions.
 
     Returns
     -------
@@ -48,7 +59,11 @@ def granule_sources(granule_id: str) -> tuple[tuple[str, str], ...]:
     --------
     Sources of an L30 granule:
 
-    >>> granule_sources("HLS.L30.T58UFF.2025105T234951.v2.0")
+    >>> granule_sources(
+    ...     "HLS.L30.T58UFF.2025105T234951.v2.0",
+    ...     public_bucket="lp-prod-public",
+    ...     protected_bucket="lp-prod-protected",
+    ... )
     (('lp-prod-public', 'HLSL30.020/HLS.L30.T58UFF.2025105T234951.v2.0/HLS.L30.T58UFF.2025105T234951.v2.0.jpg'),
      ('lp-prod-protected', 'HLSL30.020/HLS.L30.T58UFF.2025105T234951.v2.0/HLS.L30.T58UFF.2025105T234951.v2.0.B02.tif'),
      ('lp-prod-protected', 'HLSL30.020/HLS.L30.T58UFF.2025105T234951.v2.0/HLS.L30.T58UFF.2025105T234951.v2.0.B03.tif'),
@@ -61,7 +76,11 @@ def granule_sources(granule_id: str) -> tuple[tuple[str, str], ...]:
 
     Sources of an S30 granule:
 
-    >>> granule_sources("HLS.S30.T59VNH.2025105T234641.v2.0")
+    >>> granule_sources(
+    ...     "HLS.S30.T59VNH.2025105T234641.v2.0",
+    ...     public_bucket="lp-prod-public",
+    ...     protected_bucket="lp-prod-protected",
+    ... )
     (('lp-prod-public', 'HLSS30.020/HLS.S30.T59VNH.2025105T234641.v2.0/HLS.S30.T59VNH.2025105T234641.v2.0.jpg'),
      ('lp-prod-protected', 'HLSS30.020/HLS.S30.T59VNH.2025105T234641.v2.0/HLS.S30.T59VNH.2025105T234641.v2.0.B02.tif'),
      ('lp-prod-protected', 'HLSS30.020/HLS.S30.T59VNH.2025105T234641.v2.0/HLS.S30.T59VNH.2025105T234641.v2.0.B03.tif'),
@@ -80,9 +99,9 @@ def granule_sources(granule_id: str) -> tuple[tuple[str, str], ...]:
     return (
         # The thumbnail lives in the "public" bucket, and all other files live in
         # the "protected" bucket.
-        ("lp-prod-public", f"{collection}/{granule_id}/{granule_id}.jpg"),
+        (public_bucket, f"{collection}/{granule_id}/{granule_id}.jpg"),
         *(
-            ("lp-prod-protected", f"{collection}/{granule_id}/{granule_id}{suffix}")
+            (protected_bucket, f"{collection}/{granule_id}/{granule_id}{suffix}")
             for suffix in suffixes
         ),
     )
@@ -94,7 +113,12 @@ def make_s3_downloader(s3: S3Client) -> Downloader:
     def s3_download_file(src: tuple[str, str], dst: Path) -> None:
         bucket, key = src
         print(f"Downloading s3://{bucket}/{key} to {dst}")
-        s3.download_file(bucket, key, str(dst))
+
+        try:
+            s3.download_file(bucket, key, str(dst))
+        except botocore.exceptions.ClientError:
+            msg = f"Failed to download s3://{bucket}/{key}"
+            raise RuntimeError(msg)
 
     return s3_download_file
 
@@ -175,7 +199,14 @@ def strip_metadata_urls(cmr_xml: Path) -> None:
     transform(etree.parse(cmr_xml, None)).write_c14n(cmr_xml)
 
 
-def prepare_inputs(s3: S3Client, granule_id: str, dst_dir: Path) -> None:
+def prepare_inputs(
+    s3: S3Client,
+    granule_id: str,
+    dst_dir: Path,
+    *,
+    public_bucket: str,
+    protected_bucket: str,
+) -> None:
     """Prepare HLS granule files for VI processing.
 
     Download granule's HLS files (from LPDAAC buckets) required for producing VI
@@ -191,8 +222,16 @@ def prepare_inputs(s3: S3Client, granule_id: str, dst_dir: Path) -> None:
         ID of the granule to download files for
     dst_dir:
         Path to local directory to download files to
+    public_bucket:
+        Name of the "public" bucket, where thumbnails are stored.
+    protected_bucket:
+        Name of the "protected" bucket, where all other granule files are stored,
+        requiring read permissions.
+
     """
-    sources = granule_sources(granule_id)
+    sources = granule_sources(
+        granule_id, public_bucket=public_bucket, protected_bucket=protected_bucket
+    )
     download_files(make_s3_downloader(s3), sources, dst_dir)
     strip_metadata_urls(dst_dir / f"{granule_id}.cmr.xml")
 
@@ -321,6 +360,10 @@ def upload_outputs(
 def main() -> None:
     job_id = os.environ["AWS_BATCH_JOB_ID"]
     granule_id = os.environ["GRANULE_ID"]
+    public_bucket = os.environ.get("LPDAAC_PUBLIC_BUCKET_NAME", "lp-prod-public")
+    protected_bucket = os.environ.get(
+        "LPDAAC_PROTECTED_BUCKET_NAME", "lp-prod-protected"
+    )
     output_bucket = os.environ.get("DEBUG_BUCKET", os.environ["OUTPUT_BUCKET"])
     debug = os.environ.get("DEBUG_BUCKET") is not None
 
@@ -332,7 +375,13 @@ def main() -> None:
 
     s3 = boto3.client("s3")
 
-    prepare_inputs(s3, granule_id, input_dir)
+    prepare_inputs(
+        s3,
+        granule_id,
+        input_dir,
+        public_bucket=public_bucket,
+        protected_bucket=protected_bucket,
+    )
     create_outputs(granule_id, input_dir, output_dir)
     upload_outputs(s3, job_id, granule_id, output_dir, output_bucket, debug)
 
