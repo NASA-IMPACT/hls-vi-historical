@@ -47,6 +47,7 @@ def make_downloader(s3: S3Client) -> Downloader:
     seemlessly use HTTPS to download a file from an LPDAAC bucket to a local
     file, then "upload" the local file to the corresponding local MinIO bucket.
     """
+
     def transfer(src: tuple[str, str], dst: Path) -> None:
         bucket, key = src
         http_download(src, dst)
@@ -85,7 +86,11 @@ def transfer_granule_files(s3: S3Client, granule_id: str) -> None:
     To avoid unnecessary egress costs, only files missing from the local MinIO
     buckets are transferred.
     """
-    sources = granule_sources(granule_id)
+    sources = granule_sources(
+        granule_id,
+        public_bucket="lp-prod-public",
+        protected_bucket="lp-prod-protected",
+    )
 
     with TemporaryDirectory() as tmpdir:
         missing = [source for source in sources if not object_exists(s3, source)]

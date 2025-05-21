@@ -46,4 +46,6 @@ services:
       - AWS_ACCESS_KEY_ID=${MINIO_ROOT_USER:-minioadmin}
       - AWS_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
       - AWS_BATCH_JOB_ID=42
+      - LPDAAC_PUBLIC_BUCKET_NAME
+      - LPDAAC_PROTECTED_BUCKET_NAME
       - OUTPUT_BUCKET=hls-global-v2-forward
