@@ -31,7 +31,7 @@ jobs:
 
       - name: Build image
         run: |
-          docker build --tag ${SOURCE_IMAGE}:latest .
+          docker build --quiet --tag ${SOURCE_IMAGE}:latest .
 
       - name: Configure AWS credentials (OIDC)
         # In CI (i.e., not running locally via `act`), use OIDC for credentials
