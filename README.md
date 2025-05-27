@@ -30,6 +30,11 @@ following environment variables must/can be set:
   granule files in the other bucket.
 - `OUTPUT_BUCKET`: Name of the bucket in which to put the produced HLS VI
   granule files.
+- LPDAAC AWS Credentials (_optional_): AWS credentials for accessing LPDAAC
+  data buckets may be provided.
+    - `LPDAAC_ACCESS_KEY_ID`
+    - `LPDAAC_SECRET_ACCESS_KEY`
+    - `LPDAAC_SESSION_TOKEN`
 - `DEBUG_BUCKET` (_optional_): Name of the bucket to use _instead of_
   `OUTPUT_BUCKET`, so that the produced outputs can be inspected for debugging
   purposes, without triggering LPDAAC notification.
