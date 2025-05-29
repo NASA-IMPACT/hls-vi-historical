@@ -32,9 +32,17 @@ following environment variables must/can be set:
   granule files.
 - LPDAAC AWS Credentials (_optional_): AWS credentials for accessing LPDAAC
   data buckets may be provided.
-    - `LPDAAC_ACCESS_KEY_ID`
-    - `LPDAAC_SECRET_ACCESS_KEY`
-    - `LPDAAC_SESSION_TOKEN`
+  - `LPDAAC_ACCESS_KEY_ID`
+  - `LPDAAC_SECRET_ACCESS_KEY`
+  - `LPDAAC_SESSION_TOKEN`
+  - **Note**: The `hls-vi-historical-orchestration` system injects these environment
+    variables into this container when running AWS Batch jobs.
+    This works by defining "secrets" in the JobDefinition's configuration settings
+    that instruct the AWS Batch worker to pull from SecretsManager and pass the values
+    as environment variables when running the container.
+    Since these S3 credentials expire after 1 hour, a scheduled Lambda function refreshes
+    the value of the secret with new credentials provided by the LPDAAC `/s3credentials`
+    endpoint.
 - `DEBUG_BUCKET` (_optional_): Name of the bucket to use _instead of_
   `OUTPUT_BUCKET`, so that the produced outputs can be inspected for debugging
   purposes, without triggering LPDAAC notification.
