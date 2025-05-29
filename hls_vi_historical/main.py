@@ -373,10 +373,17 @@ def main() -> None:
     output_dir = working_dir / "hls-vi"
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    lpdaac_session = boto3.Session(
+        aws_access_key_id=os.getenv("LPDAAC_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("LPDAAC_SECRET_ACCESS_KEY"),
+        aws_session_token=os.getenv("LPDAAC_SESSION_TOKEN"),
+    )
+    lpdaac_s3 = lpdaac_session.client("s3")
+
     s3 = boto3.client("s3")
 
     prepare_inputs(
-        s3,
+        lpdaac_s3,
         granule_id,
         input_dir,
         public_bucket=public_bucket,

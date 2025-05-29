@@ -30,6 +30,21 @@ following environment variables must/can be set:
   granule files in the other bucket.
 - `OUTPUT_BUCKET`: Name of the bucket in which to put the produced HLS VI
   granule files.
+- LPDAAC AWS Credentials (_optional_): AWS credentials for accessing LPDAAC
+  data buckets may be provided.
+
+  - `LPDAAC_ACCESS_KEY_ID`
+  - `LPDAAC_SECRET_ACCESS_KEY`
+  - `LPDAAC_SESSION_TOKEN`
+
+  Values are obtained via a request to the [LPDAAC S3 credentials endpoint].
+  Such a request requires a [NASA Earthdata Login] account.
+
+  These are optional in accounts that have been granted direct read permission
+  to the LPDAAC protected bucket.
+
+  **NOTE**: The [hls-vi-historical-orchestration] system injects these
+  environment variables into this container when running AWS Batch jobs.
 - `DEBUG_BUCKET` (_optional_): Name of the bucket to use _instead of_
   `OUTPUT_BUCKET`, so that the produced outputs can be inspected for debugging
   purposes, without triggering LPDAAC notification.
@@ -213,3 +228,9 @@ file in order for `act` to be able to reference your Docker Desktop socket:
   https://search.earthdata.nasa.gov/search/granules?p=C2021957657-LPCLOUD
 [S30]:
   https://search.earthdata.nasa.gov/search/granules?p=C2021957295-LPCLOUD
+[hls-vi-historical-orchestration]:
+  https://github.com/NASA-IMPACT/hls-vi-historical-orchestration
+[LPDAAC S3 credentials endpoint]:
+  https://data.lpdaac.earthdatacloud.nasa.gov/s3credentials
+[NASA Earthdata Login]:
+  https://urs.earthdata.nasa.gov/
