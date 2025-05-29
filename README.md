@@ -228,3 +228,9 @@ file in order for `act` to be able to reference your Docker Desktop socket:
   https://search.earthdata.nasa.gov/search/granules?p=C2021957657-LPCLOUD
 [S30]:
   https://search.earthdata.nasa.gov/search/granules?p=C2021957295-LPCLOUD
+[hls-vi-historical-orchestration]:
+  https://github.com/NASA-IMPACT/hls-vi-historical-orchestration
+[LPDAAC S3 credentials endpoint]:
+  https://data.lpdaac.earthdatacloud.nasa.gov/s3credentials
+[NASA Earthdata Login]:
+  https://urs.earthdata.nasa.gov/
