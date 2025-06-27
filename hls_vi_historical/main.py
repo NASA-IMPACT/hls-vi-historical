@@ -115,7 +115,9 @@ def make_s3_downloader(s3: S3Client) -> Downloader:
         print(f"Downloading s3://{bucket}/{key} to {dst}")
 
         try:
-            s3.download_file(bucket, key, str(dst))
+            s3.download_file(
+                bucket, key, str(dst), ExtraArgs={"RequestPayer": "requester"}
+            )
         except botocore.exceptions.ClientError:
             msg = f"Failed to download s3://{bucket}/{key}"
             raise RuntimeError(msg)
