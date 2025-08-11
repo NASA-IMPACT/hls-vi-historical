@@ -129,6 +129,7 @@ def download_files(
     downloader: Downloader,
     srcs: Sequence[tuple[str, str]],
     dst_dir: Path,
+    max_download_threads: int | None,
 ) -> tuple[Sequence[tuple[str, str]], Sequence[Path]]:
     """Download objects from AWS S3 to a local directory.
 
@@ -140,6 +141,9 @@ def download_files(
         Sequence of source 2-tuples of the form (bucket, key).
     dst_dir:
         Path to local destination directory.
+    max_download_threads:
+        Maximum threads used when downloading. If not specified, defaults to
+        `max_workers` argument for `ThreadPoolExecutor` (e.g., 5 per CPU).
 
     Returns
     -------
@@ -154,7 +158,7 @@ def download_files(
     missing = [(src, dst) for src, dst in zip(srcs, dsts) if not dst.exists()]
     missing_srcs, missing_dsts = zip(*missing) if missing else ([], [])
 
-    with ThreadPoolExecutor() as executor:
+    with ThreadPoolExecutor(max_workers=max_download_threads) as executor:
         # We don't care about collecting the results of the map method, but we
         # must force iteration over the returned iterator to make sure everything
         # is downloaded before proceeding.
@@ -208,6 +212,7 @@ def prepare_inputs(
     *,
     public_bucket: str,
     protected_bucket: str,
+    max_download_threads: int | None = None,
 ) -> None:
     """Prepare HLS granule files for VI processing.
 
@@ -229,12 +234,20 @@ def prepare_inputs(
     protected_bucket:
         Name of the "protected" bucket, where all other granule files are stored,
         requiring read permissions.
+    max_download_threads:
+        Maximum threads used when downloading. If not specified, defaults to
+        `max_workers` argument for `ThreadPoolExecutor` (e.g., 5 per CPU).
 
     """
     sources = granule_sources(
         granule_id, public_bucket=public_bucket, protected_bucket=protected_bucket
     )
-    download_files(make_s3_downloader(s3), sources, dst_dir)
+    download_files(
+        make_s3_downloader(s3),
+        sources,
+        dst_dir,
+        max_download_threads=max_download_threads,
+    )
     strip_metadata_urls(dst_dir / f"{granule_id}.cmr.xml")
 
 
@@ -362,12 +375,12 @@ def upload_outputs(
 def main() -> None:
     job_id = os.environ["AWS_BATCH_JOB_ID"]
     granule_id = os.environ["GRANULE_ID"]
-    public_bucket = os.environ.get("LPDAAC_PUBLIC_BUCKET_NAME", "lp-prod-public")
-    protected_bucket = os.environ.get(
-        "LPDAAC_PROTECTED_BUCKET_NAME", "lp-prod-protected"
-    )
-    output_bucket = os.environ.get("DEBUG_BUCKET", os.environ["OUTPUT_BUCKET"])
-    debug = os.environ.get("DEBUG_BUCKET") is not None
+    public_bucket = os.getenv("LPDAAC_PUBLIC_BUCKET_NAME", "lp-prod-public")
+    protected_bucket = os.getenv("LPDAAC_PROTECTED_BUCKET_NAME", "lp-prod-protected")
+    output_bucket = os.getenv("DEBUG_BUCKET", os.environ["OUTPUT_BUCKET"])
+    debug = os.getenv("DEBUG_BUCKET") is not None
+    if max_download_threads := os.getenv("MAX_DOWNLOAD_THREADS"):
+        max_download_threads = int(max_download_threads)
 
     working_dir = Path("/var") / "scratch" / job_id
     input_dir = working_dir / "hls"
@@ -390,6 +403,7 @@ def main() -> None:
         input_dir,
         public_bucket=public_bucket,
         protected_bucket=protected_bucket,
+        max_download_threads=max_download_threads,
     )
     create_outputs(granule_id, input_dir, output_dir)
     upload_outputs(s3, job_id, granule_id, output_dir, output_bucket, debug)
