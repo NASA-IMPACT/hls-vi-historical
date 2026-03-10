@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Callable
 
 import boto3
 import botocore.exceptions
+from boto3.s3.transfer import TransferConfig
 
 if TYPE_CHECKING:
     from types_boto3_s3 import S3Client
@@ -107,16 +108,25 @@ def granule_sources(
     )
 
 
-def make_s3_downloader(s3: S3Client) -> Downloader:
+def make_s3_downloader(session: boto3.Session) -> Downloader:
     """Make a downloader that downloads from S3 URLs via an S3 client."""
+    # Disable internal Boto3 threads so they don't clash with our ThreadPoolExecutor
+    no_proc_threads = TransferConfig(use_threads=False)
 
     def s3_download_file(src: tuple[str, str], dst: Path) -> None:
         bucket, key = src
-        print(f"Downloading s3://{bucket}/{key} to {dst}")
 
+        # Create a fresh client for this specific download task
+        s3 = session.client("s3")
+
+        print(f"Downloading s3://{bucket}/{key} to {dst}")
         try:
             s3.download_file(
-                bucket, key, str(dst), ExtraArgs={"RequestPayer": "requester"}
+                bucket,
+                key,
+                str(dst),
+                ExtraArgs={"RequestPayer": "requester"},
+                Config=no_proc_threads,
             )
         except botocore.exceptions.ClientError:
             msg = f"Failed to download s3://{bucket}/{key}"
@@ -202,7 +212,7 @@ def strip_metadata_urls(cmr_xml: Path) -> None:
 
 
 def prepare_inputs(
-    s3: S3Client,
+    session: boto3.Session,
     granule_id: str,
     dst_dir: Path,
     *,
@@ -218,8 +228,8 @@ def prepare_inputs(
 
     Parameters
     ----------
-    s3:
-        Boto3 S3 client to use for downloading HLS granule files
+    session:
+        Boto3 session used to create a S3 client that downloads from LPDAAC.
     granule_id:
         ID of the granule to download files for
     dst_dir:
@@ -234,7 +244,7 @@ def prepare_inputs(
     sources = granule_sources(
         granule_id, public_bucket=public_bucket, protected_bucket=protected_bucket
     )
-    download_files(make_s3_downloader(s3), sources, dst_dir)
+    download_files(make_s3_downloader(session), sources, dst_dir)
     strip_metadata_urls(dst_dir / f"{granule_id}.cmr.xml")
 
 
@@ -380,12 +390,11 @@ def main() -> None:
         aws_secret_access_key=os.getenv("LPDAAC_SECRET_ACCESS_KEY"),
         aws_session_token=os.getenv("LPDAAC_SESSION_TOKEN"),
     )
-    lpdaac_s3 = lpdaac_session.client("s3")
 
     s3 = boto3.client("s3")
 
     prepare_inputs(
-        lpdaac_s3,
+        lpdaac_session,
         granule_id,
         input_dir,
         public_bucket=public_bucket,
